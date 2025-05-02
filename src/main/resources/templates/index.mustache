@@ -2,9 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Новости</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        #loader {
+            display: none;
+            font-weight: bold;
+            color: gray;
+        }
+    </style>
 </head>
 <body>
-<p>hello world</p>
+
+<h2>Последние новости</h2>
+
+<div id="loader">🔄 Загрузка новостей...</div>
+<div id="news-container"></div>
+
+<script>
+    $(document).ready(function () {
+        $('#loader').show();
+
+        $.ajax({
+            url: '/api/news',
+            method: 'GET',
+            success: function (data) {
+                const html = data.data.map(a => `<a href = ${a.url}>${a.title}</a><br>`).join('');
+                $('#news-container').html(html);
+            },
+            error: function () {
+                $('#news-container').html('<p>Ошибка при загрузке новостей.</p>');
+            },
+            complete: function () {
+                $('#loader').hide();
+            }
+        });
+    });
+</script>
+
 </body>
 </html>

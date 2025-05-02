@@ -10,24 +10,52 @@
             font-weight: bold;
             color: gray;
         }
+        body{
+            margin:10px;
+            padding:10px;
+        }
     </style>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css">
 </head>
 <body>
 
 <h2>Последние новости</h2>
+<form id="categoryForm" class="ui checkbox">
+    <label><input type="checkbox" name="category" value="business"> Business News</label><br>
+    <label><input type="checkbox" name="category" value="entertainment"> Entertainment News</label><br>
+    <label><input type="checkbox" name="category" value="health"> Health News</label><br>
+    <label><input type="checkbox" name="category" value="science"> Science News</label><br>
+    <label><input type="checkbox" name="category" value="sports"> Sports News</label><br>
+    <label><input type="checkbox" name="category" value="technology"> Technology News</label><br>
+</form>
+
 
 <div id="loader">🔄 Загрузка новостей...</div>
 <div id="news-container"></div>
 
 <script>
-    $(document).ready(function () {
+    function fetchNews(categories){
         $('#loader').show();
 
         $.ajax({
-            url: '/api/news',
+            url: '/api/news/categories',
             method: 'GET',
+            data: {categories: categories || 'general'},
             success: function (data) {
-                const html = data.data.map(a => `<a href = ${a.url}>${a.title}</a><br>`).join('');
+                const html = data.data.map(a => {
+                    const imageUrl = a.image || 'https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg'; // дефолтная картинка
+
+                    return `
+                    <a href="${a.url}" target="_blank" style="text-decoration: none; color: inherit;">
+                      <div style="border:1px solid black; padding: 10px; margin-bottom: 10px; cursor: pointer;">
+                        <h1>${a.title}</h1>
+                        <img src="${imageUrl}" style="width:100px; height:100px;" alt="news image">
+                        <p>${a.description}</p>
+                      </div>
+                    </a>
+                  `;
+                }).join('');
+
                 $('#news-container').html(html);
             },
             error: function () {
@@ -36,6 +64,18 @@
             complete: function () {
                 $('#loader').hide();
             }
+        });
+    }
+    $(document).ready(function(){
+        fetchNews('general');
+
+        $('#categoryForm input[type=checkbox]').on('change', function () {
+            const selected = $('input[name=category]:checked')
+                    .map(function () { return this.value; })
+                    .get()
+                    .join(',');
+
+            fetchNews(selected || 'general');
         });
     });
 </script>

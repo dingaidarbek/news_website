@@ -1,5 +1,6 @@
 package com.example.news_website;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -11,8 +12,15 @@ public class MainService {
         this.restTemplate = restTemplate;
     }
 
+    @Cacheable("news")
     public String getNews(String apiKey) {
         String url = "http://api.mediastack.com/v1/news?access_key="+apiKey+"&languages=en";
+        return restTemplate.getForObject(url, String.class);
+    }
+
+    @Cacheable("categories")
+    public String getNewsByCategories(String apiKey, String categories) {
+        String url = "http://api.mediastack.com/v1/news?access_key="+apiKey+"&languages=en&categories="+categories;
         return restTemplate.getForObject(url, String.class);
     }
 }

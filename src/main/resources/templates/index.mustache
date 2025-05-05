@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Новости</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.js"></script>
     <style>
         #loader {
             display: none;
@@ -11,23 +12,84 @@
             color: gray;
         }
         body{
-            margin:10px;
-            padding:10px;
+
+        }
+        .article:hover{
+            background-color:  lightgrey;
+            transition: all 0.3s;
+        }
+        button {
+            display: inline;
         }
     </style>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css">
 </head>
 <body>
+<button class="ui primary button" id="openModalBtn">
+    Morning digest
+</button>
 
-<h2>Последние новости</h2>
-<form id="categoryForm" class="ui checkbox">
-    <label><input type="checkbox" name="category" value="business"> Business News</label><br>
-    <label><input type="checkbox" name="category" value="entertainment"> Entertainment News</label><br>
-    <label><input type="checkbox" name="category" value="health"> Health News</label><br>
-    <label><input type="checkbox" name="category" value="science"> Science News</label><br>
-    <label><input type="checkbox" name="category" value="sports"> Sports News</label><br>
-    <label><input type="checkbox" name="category" value="technology"> Technology News</label><br>
-</form>
+<div class="ui modal" id="newsModal">
+    <i class="close icon"></i>
+    <div class="header">Morning digest</div>
+    <div class="scrolling content">
+        <div id="newsContent" class="ui relaxed divided list">
+            <div class="item">Loading news...</div>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui approve button">Close</div>
+    </div>
+</div>
+<script>
+    $('#openModalBtn').on('click', function () {
+        // Открыть модал
+        $('#newsModal').modal('show');
+
+        // Очистить и показать загрузку
+        $('#newsContent').html('<div class="item">Loading news...</div>');
+
+        // Получить новости с backend
+        fetch('/api/digest')
+                .then(response => response.text())
+                .then(data => {
+                    try {
+                        const json = JSON.parse(data);
+                        if (json.articles && json.articles.length > 0) {
+                            const html = json.articles.map(article => `
+              <div class="item">
+                <div class="content">
+                  <a class="header" href="${article.url}" target="_blank">${article.title}</a>
+                  <div class="description">${article.description || ''}</div>
+                </div>
+              </div>
+            `).join('');
+                            $('#newsContent').html(html);
+                        } else {
+                            $('#newsContent').html('<div class="item">No news</div>');
+                        }
+                    } catch (e) {
+                        $('#newsContent').html('<div class="item">Something wrong happened... (Error code: 1)</div>');
+                    }
+                })
+                .catch(() => {
+                    $('#newsContent').html('<div class="item">Something wrong happened... (Error code: 2)</div>');
+                });
+    });
+</script>
+
+<div id="categoryButtons" class = "ui menu tabular">
+    <button class="category-btn ui button item active" data-category="general">Home</button>
+    <button class="category-btn ui button item" data-category="business">Business News</button>
+    <button class="category-btn ui button item" data-category="entertainment">Entertainment News</button>
+    <button class="category-btn ui button item" data-category="health">Health News</button>
+    <button class="category-btn ui button item" data-category="science">Science News</button>
+    <button class="category-btn ui button item" data-category="sports">Sports News</button>
+    <button class="category-btn ui button item" data-category="technology">Technology News</button>
+</div>
+
+
+
 
 
 <div id="loader">🔄 Загрузка новостей...</div>
@@ -47,7 +109,7 @@
 
                     return `
                     <a href="${a.url}" target="_blank" style="text-decoration: none; color: inherit;">
-                      <div style="border:1px solid black; padding: 10px; margin-bottom: 10px; cursor: pointer;">
+                      <div style="border:1px solid black; padding: 10px; margin-bottom: 10px; cursor: pointer;" class = "article">
                         <h1>${a.title}</h1>
                         <img src="${imageUrl}" style="width:100px; height:100px;" alt="news image">
                         <p>${a.description}</p>
@@ -67,15 +129,31 @@
         });
     }
     $(document).ready(function(){
-        fetchNews('general');
+        // ⬇️ Считываем сохранённую категорию или 'general'
+        const savedCategory = localStorage.getItem('preferredCategory') || 'general';
+        if (savedCategory) {
+            // Удаляем active у всех пунктов меню
+            $(`.category-btn`).removeClass('active');
+            // Добавляем active к сохраненному
+            $(`.category-btn[data-category="${savedCategory}"]`).addClass('active');
+        }
 
-        $('#categoryForm input[type=checkbox]').on('change', function () {
-            const selected = $('input[name=category]:checked')
-                    .map(function () { return this.value; })
-                    .get()
-                    .join(',');
+        // ⬇️ Загружаем соответствующие новости
+        fetchNews(savedCategory);
 
-            fetchNews(selected || 'general');
+        $('#categoryButtons').on('click', '.category-btn', function (e) {
+            e.preventDefault(); // чтобы кнопка не перезагружала страницу
+            // Удаляем класс 'selected' у всех кнопок
+            $('.category-btn').removeClass('active');
+
+            // Добавляем класс 'selected' только на нажатую кнопку
+            $(this).addClass('active');
+            const category = $(this).data('category') || 'general';
+
+            // ⬇️ Сохраняем категорию в localStorage
+            localStorage.setItem('preferredCategory', category);
+
+            fetchNews(category);
         });
     });
 </script>

@@ -23,4 +23,11 @@ public class MainService {
         String url = "http://api.mediastack.com/v1/news?access_key="+apiKey+"&languages=en&categories="+categories;
         return restTemplate.getForObject(url, String.class);
     }
+
+    @Cacheable("digest")
+    public String getDigest(String apiKey) {
+        String url = "https://newsapi.org/v2/top-headlines?apiKey=" + apiKey + "&language=en&pageSize=7";
+        return restTemplate.getForObject(url, String.class);
+    }
+
 }
